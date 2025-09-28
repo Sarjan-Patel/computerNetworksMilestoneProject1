@@ -95,18 +95,77 @@ class User:
         finally:
             sock.close()
     
+    def send_to_manager(self, command, params):
+        """Send command to manager and get response"""
+        message = create_message(command, params, self.name)
+        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        try:
+            sock.sendto(message.encode(), (self.manager_ip, self.manager_port))
+            response, _ = sock.recvfrom(MAX_MESSAGE_SIZE)
+            return parse_message(response.decode())
+        finally:
+            sock.close()
+    
     def command_interface(self):
         """Command line interface for user commands"""
-        print(f"User {self.name} ready. Type 'quit' to exit.")
+        print(f"User {self.name} ready. Available commands:")
+        print("  configure-dss <dss_name> <n> <striping_unit>")
+        print("  deregister-user")
+        print("  quit")
+        
         while self.running:
             try:
                 command = input(f"{self.name}> ").strip()
                 if command.lower() == 'quit':
                     break
+                elif command.startswith("configure-dss"):
+                    self.handle_configure_dss(command)
+                elif command == "deregister-user":
+                    self.handle_deregister_user()
                 elif command:
-                    print(f"Command '{command}' received (not implemented yet)")
+                    print(f"Unknown command: {command}")
             except (EOFError, KeyboardInterrupt):
                 break
+    
+    def handle_configure_dss(self, command):
+        """Handle configure-dss command"""
+        parts = command.split()
+        if len(parts) != 4:
+            print("Usage: configure-dss <dss_name> <n> <striping_unit>")
+            return
+        
+        try:
+            dss_name = parts[1]
+            n = int(parts[2])
+            striping_unit = int(parts[3])
+            
+            response = self.send_to_manager("configure-dss", {
+                "dss_name": dss_name,
+                "n": n,
+                "striping_unit": striping_unit
+            })
+            
+            if response:
+                print(f"DSS configuration: {response['status']}")
+                if response.get("message"):
+                    print(f"Message: {response['message']}")
+            
+        except ValueError:
+            print("Error: n and striping_unit must be integers")
+    
+    def handle_deregister_user(self):
+        """Handle user deregistration"""
+        response = self.send_to_manager("deregister-user", {
+            "user_name": self.name
+        })
+        
+        if response:
+            print(f"Deregistration: {response['status']}")
+            if response.get("message"):
+                print(f"Message: {response['message']}")
+            
+            if response["status"] == "SUCCESS":
+                self.running = False
 
 def main():
     if len(sys.argv) != 6:

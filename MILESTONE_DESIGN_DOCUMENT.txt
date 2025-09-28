@@ -1,0 +1,311 @@
+DISTRIBUTED STORAGE SYSTEM (DSS) - MILESTONE DESIGN DOCUMENT
+================================================================
+
+GROUP 35 - SOCKET PROGRAMMING PROJECT
+Milestone Commands Implementation: register-user, register-disk, configure-dss, deregister-user, deregister-disk
+
+================================================================
+1. DESIGN DOCUMENT (50%) - Description of DSS Application Program Design
+================================================================
+
+The Distributed Storage System (DSS) is implemented as a client-server architecture using UDP sockets for communication. The system consists of three main components:
+
+- Manager: Central coordinator that handles registration, configuration, and coordination
+- Users: Clients that can configure DSS systems and perform storage operations
+- Disks: Storage nodes that provide actual storage capacity
+
+The system uses a JSON-based message format for all communications and maintains state information at the manager to track registered users, disks, and configured DSS systems.
+
+================================================================
+(a) MESSAGE FORMAT FOR EACH COMMAND IMPLEMENTED FOR THE MILESTONE
+================================================================
+
+(a.i) REGISTER-USER Command
+---------------------------
+Request Format:
+{
+    "command": "register-user",
+    "parameters": {
+        "user_name": "U1",
+        "ipv4_addr": "127.0.0.1",
+        "m_port": 18520,
+        "c_port": 18521
+    },
+    "sender": "U1"
+}
+
+Response Format:
+{
+    "status": "SUCCESS" | "FAILURE",
+    "message": "Error message if failure"
+}
+
+(a.ii) REGISTER-DISK Command
+----------------------------
+Request Format:
+{
+    "command": "register-disk",
+    "parameters": {
+        "disk_name": "D1",
+        "ipv4_addr": "127.0.0.1",
+        "m_port": 18510,
+        "c_port": 18511
+    },
+    "sender": "D1"
+}
+
+Response Format:
+{
+    "status": "SUCCESS" | "FAILURE",
+    "message": "Error message if failure"
+}
+
+(a.iii) CONFIGURE-DSS Command
+-----------------------------
+Request Format:
+{
+    "command": "configure-dss",
+    "parameters": {
+        "dss_name": "DSS1",
+        "n": 3,
+        "striping_unit": 1024
+    },
+    "sender": "U1"
+}
+
+Response Format:
+{
+    "status": "SUCCESS" | "FAILURE",
+    "message": "Error message if failure"
+}
+
+(a.iv) DEREGISTER-USER Command
+------------------------------
+Request Format:
+{
+    "command": "deregister-user",
+    "parameters": {
+        "user_name": "U1"
+    },
+    "sender": "U1"
+}
+
+Response Format:
+{
+    "status": "SUCCESS" | "FAILURE",
+    "message": "Error message if failure"
+}
+
+(a.v) DEREGISTER-DISK Command
+-----------------------------
+Request Format:
+{
+    "command": "deregister-disk",
+    "parameters": {
+        "disk_name": "D1"
+    },
+    "sender": "D1"
+}
+
+Response Format:
+{
+    "status": "SUCCESS" | "FAILURE",
+    "message": "Error message if failure"
+}
+
+================================================================
+(b) TIME-SPACE DIAGRAMS FOR EACH COMMAND IMPLEMENTED
+================================================================
+
+[PLACEHOLDER FOR TIME-SPACE DIAGRAMS]
+Note: Time-space diagrams need to be created using software tools like PowerPoint, Visio, or draw.io. Each diagram should show:
+- Vertical timeline for each entity (User, Manager, Disk)
+- Message exchanges between entities
+- Actions taken on message receipt/transmission
+- Protocol flow and error handling
+
+(b.i) REGISTER-USER Protocol Flow:
+User -> Manager: register-user request
+Manager: Validate parameters, check conflicts, register user
+Manager -> User: SUCCESS/FAILURE response
+
+(b.ii) REGISTER-DISK Protocol Flow:
+Disk -> Manager: register-disk request
+Manager: Validate parameters, check conflicts, register disk with Free state
+Manager -> Disk: SUCCESS/FAILURE response
+
+(b.iii) CONFIGURE-DSS Protocol Flow:
+User -> Manager: configure-dss request
+Manager: Validate parameters, check free disks, select n disks, update states
+Manager -> User: SUCCESS/FAILURE response
+
+(b.iv) DEREGISTER-USER Protocol Flow:
+User -> Manager: deregister-user request
+Manager: Validate user exists, remove from registry
+Manager -> User: SUCCESS/FAILURE response
+
+(b.v) DEREGISTER-DISK Protocol Flow:
+Disk -> Manager: deregister-disk request
+Manager: Validate disk exists and is Free, remove from registry
+Manager -> Disk: SUCCESS/FAILURE response
+
+================================================================
+(c) DATA STRUCTURES USED AND DESIGN DECISIONS MADE
+================================================================
+
+4.1 Manager State Information:
+------------------------------
+The Manager maintains three main data structures:
+
+1. registered_users (dict):
+   Key: user_name (string)
+   Value: {
+       "user_name": str,
+       "ipv4_addr": str,
+       "m_port": int,
+       "c_port": int
+   }
+
+2. registered_disks (dict):
+   Key: disk_name (string)
+   Value: {
+       "disk_name": str,
+       "ipv4_addr": str,
+       "m_port": int,
+       "c_port": int,
+       "state": "Free" | "InDSS",
+       "dss_name": str (if InDSS)
+   }
+
+3. configured_dsses (dict):
+   Key: dss_name (string)
+   Value: {
+       "dss_name": str,
+       "n": int,
+       "striping_unit": int,
+       "disks": [list of disk names],
+       "files": {} (for future file management)
+   }
+
+4.2 Design Decisions:
+---------------------
+- JSON Message Format: Chosen for readability, debugging, and extensibility
+- UDP Sockets: Selected for simplicity and stateless communication
+- Port Range: Group 35 uses ports 18500-18999 (calculated from group number)
+- Random Disk Selection: For configure-dss, disks are selected randomly from free disks
+- State Management: Disks have "Free" or "InDSS" states to prevent conflicts
+- Validation: Comprehensive parameter validation for all commands
+- Error Handling: Consistent error responses with descriptive messages
+
+4.3 Port Allocation Strategy:
+----------------------------
+- Manager: Uses command-line specified port (e.g., 18500)
+- Users: Each user gets unique m_port and c_port
+- Disks: Each disk gets unique m_port and c_port
+- Port conflicts are checked during registration
+
+4.4 Threading Model:
+-------------------
+- Users and Disks use threading for concurrent management and command handling
+- Manager uses single-threaded UDP server with message parsing
+- Socket timeouts prevent blocking operations
+
+================================================================
+5. IMPLEMENTATION DETAILS
+================================================================
+
+5.1 File Structure:
+------------------
+src/
+├── manager.py          # Main manager implementation
+├── user.py            # User client implementation
+├── disk.py            # Disk node implementation
+├── utils/
+│   ├── constants.py   # Configuration constants
+│   └── message.py     # Message creation and parsing utilities
+└── commands.txt       # Test commands and examples
+
+5.2 Key Functions:
+-----------------
+Manager:
+- handle_message(): Routes incoming messages to appropriate handlers
+- register_user(): Validates and registers new users
+- register_disk(): Validates and registers new disks
+- configure_dss(): Creates new DSS with n disks
+- deregister_user(): Removes user from registry
+- deregister_disk(): Removes disk from registry (if Free)
+
+User/Disk:
+- register_with_manager(): Sends registration request
+- send_to_manager(): Generic function to send commands
+- command_interface(): Interactive command line interface
+
+5.3 Error Handling:
+------------------
+- Parameter validation for all inputs
+- Duplicate name checking
+- Port conflict detection
+- State validation (e.g., disk must be Free for deregistration)
+- JSON parsing error handling
+- Socket timeout handling
+
+================================================================
+(d) GITHUB REPOSITORY SCREENSHOTS
+================================================================
+
+(d.i) Git Log Output:
+--------------------
+[PLACEHOLDER: Screenshot of terminal output for command:]
+git log --pretty=format:"%h - %an, %ad (Commit) - %cd (Author)"
+
+(d.ii) Commit History Screenshot:
+--------------------------------
+[PLACEHOLDER: Screenshot of entire commit history in GitHub repository]
+
+(d.iii) Git Reflog Output:
+-------------------------
+[PLACEHOLDER: Screenshot of terminal output for command:]
+git reflog
+
+================================================================
+7. TESTING AND VALIDATION
+================================================================
+
+7.1 Test Commands:
+-----------------
+The commands.txt file contains test scenarios:
+
+1. Start Manager: python src/manager.py 18500
+2. Start Disks: python src/disk.py D1 127.0.0.1 18500 18510 18511
+3. Start Users: python src/user.py U1 127.0.0.1 18500 18520 18521
+4. Configure DSS: configure-dss DSS1 3 1024
+5. Deregister: deregister-user
+
+7.2 Validation Scenarios:
+------------------------
+- Multiple user registration with different names
+- Multiple disk registration with different names
+- DSS configuration with sufficient free disks
+- DSS configuration with insufficient disks (error case)
+- Deregistration of users and free disks
+- Attempted deregistration of disks in use (error case)
+- Port conflict detection
+- Invalid parameter validation
+
+================================================================
+8. FUTURE EXTENSIONS
+================================================================
+
+The current implementation provides a solid foundation for:
+- File upload/download operations
+- File replication and striping
+- Disk failure handling
+- Load balancing
+- Security and authentication
+- Persistent storage of system state
+
+================================================================
+END OF DESIGN DOCUMENT
+================================================================
+
+Note: This document covers the milestone requirements for the five implemented commands. The time-space diagrams and GitHub screenshots need to be added using the specified software tools and actual repository data.

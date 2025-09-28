@@ -92,6 +92,23 @@ class Disk:
             print(f"Registration response: {response.decode()}")
         finally:
             sock.close()
+    
+    def deregister_with_manager(self):
+        """Deregister this disk with the manager"""
+        message = create_message("deregister-disk", {
+            "disk_name": self.name
+        }, self.name)
+        
+        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        try:
+            sock.sendto(message.encode(), (self.manager_ip, self.manager_port))
+            response, _ = sock.recvfrom(MAX_MESSAGE_SIZE)
+            print(f"Deregistration response: {response.decode()}")
+            response_data = parse_message(response.decode())
+            if response_data and response_data["status"] == "SUCCESS":
+                self.running = False
+        finally:
+            sock.close()
 
 def main():
     if len(sys.argv) != 6:
