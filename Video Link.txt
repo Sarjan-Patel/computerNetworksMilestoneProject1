@@ -1,0 +1,15 @@
+Video Link: https://youtu.be/WxtfClOhmJ0
+
+Time Stamp: 
+
+0:00 - 00:38 (a) Compile your manager, user and disk programs (if applicable).
+
+1:46 - 2:12   (b) Your milestone demo needs to use at least two distinct end-hosts.
+
+0:38 - 1:45   (c) Start your manager program. Then start three disk processes and two user processes that each register with the manager. Be sure to assign port numbers from your port number space (see §3.3).
+
+2:15 - 2:40   (d) Have one user issue a configure-dss command to build a DSS of size n = 3 with other parameters of your choice.
+
+2:40 - 3:09  (e) Have the other user issue a configure-dss command; this should fail due to insufficient disks.
+
+3:09 - 4:37  (f) Now deregister each user and disk, and terminate your manager
