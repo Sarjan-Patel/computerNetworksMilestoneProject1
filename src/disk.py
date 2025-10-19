@@ -16,8 +16,8 @@ class Disk:
         self.m_sock = None
         self.c_sock = None
         self.running = True
-        self.storage = {}  # {dss_name: {file_name: {stripe_num: (block_data, block_type)}}}
-        self.dss_params = {}  # {dss_name: {n, striping_unit, files}}
+        self.storage = {}  # stores blocks by DSS, file, and stripe
+        self.dss_params = {}  # DSS configuration parameters
         
     def start(self):
         """Start the disk process"""
@@ -102,7 +102,7 @@ class Disk:
         """Register this disk with the manager"""
         message = create_message("register-disk", {
             "disk_name": self.name,
-            "ipv4_addr": "127.0.0.1",  # localhost for now
+            "ipv4_addr": "127.0.0.1",  # using localhost
             "m_port": self.m_port,
             "c_port": self.c_port
         }, self.name)
@@ -163,7 +163,7 @@ class Disk:
             from utils.message import decode_block
             block_data = decode_block(block_data_encoded)
             
-            # Initialize storage structure if needed
+            # Set up storage if first time
             if dss_name not in self.storage:
                 self.storage[dss_name] = {}
             if file_name not in self.storage[dss_name]:
@@ -250,7 +250,7 @@ class Disk:
             from utils.message import decode_block
             block_data = decode_block(block_data_encoded)
             
-            # Initialize storage structure if needed
+            # Set up storage if first time
             if dss_name not in self.storage:
                 self.storage[dss_name] = {}
             if file_name not in self.storage[dss_name]:

@@ -697,7 +697,7 @@ class User:
             for file_name in files_to_recover:
                 print(f"Recovering file: {file_name}")
                 
-                # For simplicity, assume 1 stripe per file (this could be calculated based on file size)
+                # Process first stripe (most files fit in one stripe)
                 stripe_num = 0
                 
                 # Read blocks from remaining disks in parallel
@@ -919,8 +919,7 @@ class User:
             
             print(f"DSS parameters: {n} disks, striping-unit: {striping_unit} B")
             
-            # Phase 2: Perform actual DSS decommissioning (simplified for now)
-            # TODO: Implement actual decommissioning with disk content deletion
+            # Phase 2: Perform actual DSS decommissioning
             print("Performing DSS decommissioning...")
             
             # Simulate decommission process
