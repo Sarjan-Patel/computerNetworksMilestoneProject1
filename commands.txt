@@ -1,0 +1,118 @@
+# DISTRIBUTED STORAGE SYSTEM DEMO SCRIPT
+# CSE 434 Socket Programming Project
+# Based on ABCDEFG Requirements
+
+
+# SETUP: Create test files
+
+
+echo "Today is a great day to learn about distributed systems and network programming!" > day-of-affirmation.txt
+echo "This file demonstrates distributed storage with block-interleaved parity across multiple disk processes in our socket programming project." > in-flanders.txt
+echo "Once upon a time, there was a distributed storage system that could store files across multiple disks with fault tolerance. The system used striping and parity to ensure data reliability. Each file was divided into blocks and distributed across the available disks. When a disk failed, the system could recover the lost data using XOR operations on the remaining blocks. This demonstrated the power of redundancy in storage systems." > tale-of-two-cities.txt
+echo "Follow the yellow brick road to distributed computing! This system shows how files can be stored reliably across multiple nodes with automatic recovery capabilities." > wizard-of-oz.txt
+
+# TERMINAL 1: Manager Process
+
+
+python3 src/manager.py 18500
+
+# 
+# TERMINAL 2: Disk D1
+# 
+
+python3 src/disk.py D1 127.0.0.1 18500 18510 18511
+
+# 
+# TERMINAL 3: Disk D2
+# 
+
+python3 src/disk.py D2 127.0.0.1 18500 18512 18513
+
+# 
+# TERMINAL 4: Disk D3
+# 
+
+python3 src/disk.py D3 127.0.0.1 18500 18514 18515
+
+# 
+# TERMINAL 5: Disk D4
+# 
+
+python3 src/disk.py D4 127.0.0.1 18500 18516 18517
+
+# 
+# TERMINAL 6: Disk D5
+
+python3 src/disk.py D5 127.0.0.1 18500 18518 18519
+
+# 
+# TERMINAL 7: Disk D6
+
+python3 src/disk.py D6 127.0.0.1 18500 18520 18521
+
+# TERMINAL 8: User U1
+# 
+
+python3 src/user.py U1 127.0.0.1 18500 18530 18531
+
+# 
+# TERMINAL 9: User U2
+# 
+
+python3 src/user.py U2 127.0.0.1 18500 18532 18533
+
+# 
+# USER U1 COMMANDS (Terminal 8)
+# 
+
+configure-dss DSS1 3 1024
+
+copy day-of-affirmation.txt
+
+copy in-flanders.txt
+
+copy tale-of-two-cities.txt
+
+ls
+
+read DSS1 day-of-affirmation.txt
+
+# =============================================================================
+# USER U2 COMMANDS (Terminal 9)
+# =============================================================================
+
+configure-dss DSS2 3 1024
+
+copy wizard-of-oz.txt
+
+ls
+
+read DSS1 in-flanders.txt
+
+# =============================================================================
+# USER U1 COMMANDS (Terminal 8) - Disk Failure Simulation
+# =============================================================================
+
+disk-failure DSS1
+
+read DSS1 day-of-affirmation.txt 5
+
+# =============================================================================
+# SYSTEM SHUTDOWN
+# =============================================================================
+
+# Terminal 8 (User U1):
+decommission-dss DSS1
+
+deregister-user
+
+# Terminal 9 (User U2):
+decommission-dss DSS2
+
+deregister-user
+
+# Terminals 2-7 (All Disks):
+# Press Ctrl+C to stop each disk process
+
+# Terminal 1 (Manager):
+# Press Ctrl+C to stop manager process

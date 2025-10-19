@@ -12,5 +12,5 @@ PORT_RANGE_END = 18999
 AVAILABLE_PORTS = list(range(PORT_RANGE_START, PORT_RANGE_END + 1))
 
 # Message constants
-MAX_MESSAGE_SIZE = 1024
+MAX_MESSAGE_SIZE = 8192  # Increased to handle larger messages with encoded block data
 SOCKET_TIMEOUT = 30
